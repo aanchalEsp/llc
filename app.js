@@ -107,9 +107,10 @@ console.log(status)
             const AllTransactions = Wallets.map(item => {
               return item;
             })
-          
+            for (let i = 0; i < AllTransactions.length; i++) {
+            
 
-            const sqll = `SELECT wallet_address FROM wallet where wallet_address = '${AllTransactions[0]?.to_address}'`;
+            const sqll = `SELECT wallet_address FROM wallet where wallet_address = '${AllTransactions[i].to_address}'`;
           
             con.query(sqll, function (err, results) {
 
@@ -118,7 +119,7 @@ console.log(status)
 
               if (results.length > 0) {
              
-                const sql = `SELECT * FROM transaction where hash ='${AllTransactions[0]?.to_puzzle_hash}'`;
+                const sql = `SELECT * FROM transaction where hash ='${AllTransactions[i]?.to_puzzle_hash}'`;
                 con.query(sql, function (err, getResult) {
                  
 
@@ -136,7 +137,7 @@ console.log(status)
                   }
                   else {
 
-                    const sql2 = `INSERT INTO transaction(address, amount, status,type,  hash,create_at) Values('${AllTransactions[0]?.to_address}','${AllTransactions[0]?.amount / 10 **3}','${1}','${AllTransactions[0]?.type}','${AllTransactions[0]?.to_puzzle_hash}','${moment.unix(AllTransactions[0]?.created_at_time).format()}')`;
+                    const sql2 = `INSERT INTO transaction(address, amount, status,type,  hash,create_at) Values('${AllTransactions[i]?.to_address}','${AllTransactions[i]?.amount / 10 **3}','${1}','${AllTransactions[i]?.type}','${AllTransactions[i]?.to_puzzle_hash}','${moment.unix(AllTransactions[i]?.created_at_time).format()}')`;
                     console.log(sql2)
                     con.query(sql2, function (err, result) {
                       console.log("transaction records inserted")
@@ -167,7 +168,7 @@ console.log(status)
 
           }
 
-
+        }
         }
 
 
