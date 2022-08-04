@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "chia-agent": "^7.0.0"
+  }
+}
