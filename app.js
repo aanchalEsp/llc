@@ -37,8 +37,29 @@ con.connect((err) => {
 async function main() {
 
   setLogLevel("debug"); // none/error/warning/info/debug is available.
-  const agent = new RPCAgent({ service: "wallet", configPath: "/home/ubantu/.littlelambocoin/mainnet/config/config.yaml" });
+  const agent = new RPCAgent({ service: "wallet", configPath: "C:/Users/hp/.littlelambocoin/mainnet/config/config.yaml" });
+  app.get('/getwalletbalance', async (req, res) => {
 
+    let Wallet = await dataChk.get_wallet_balance(agent, { "wallet_id": 1 });
+    console.log(Wallet)
+    if(Wallet.success==true){
+      return res.status(200).send({
+        success: true,
+        msg: "balance fetched",
+        data: Wallet.wallet_balance.confirmed_wallet_balance
+  
+      })
+    }
+    else{
+      return res.status(200).send({
+        success: false,
+        msg: "balance not fetched",
+  
+      })
+    }
+   
+
+  });
 
   app.post('/importwallet', async (req, res) => {
 
