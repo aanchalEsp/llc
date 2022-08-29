@@ -16,7 +16,7 @@ const jwt = require('jsonwebtoken');
 const CryptoJS = require("crypto-js");
 
 
-app.use(cors()) 
+app.use(cors())
 const mysql = require('mysql');
 const con = mysql.createConnection({
   host: '3.108.64.60',
@@ -37,9 +37,12 @@ con.connect((err) => {
 async function main() {
 
   setLogLevel("debug"); // none/error/warning/info/debug is available.
-  const agent = new RPCAgent({ service: "wallet", configPath: "C:/Users/hp/.littlelambocoin/mainnet/config/config.yaml" });
-  app.get('/getwalletbalance', async (req, res) => {
 
+const agent = new RPCAgent({ service: "wallet", configPath: "/home/ubantu/.littlelambocoin/mainnet/config/config.yaml" });
+ console.log(dataChk)
+
+app.get('/getwalletbalance', async (req, res) => {
+  //  let wallet_id=req.body.wallet_id;
     let Wallet = await dataChk.get_wallet_balance(agent, { "wallet_id": 1 });
     console.log(Wallet)
     if(Wallet.success==true){
@@ -47,69 +50,134 @@ async function main() {
         success: true,
         msg: "balance fetched",
         data: Wallet.wallet_balance.confirmed_wallet_balance
-  
+
       })
     }
     else{
       return res.status(200).send({
         success: false,
         msg: "balance not fetched",
-  
+
       })
     }
-   
+
+
+  });
+  app.post('/login', async (req, res) => {
+
+    let email=req.body.email;
+    let password =req.body.password;
+    let sql = `SELECT * FROM UserLogin where email = '${email}'`;
+    let hash = CryptoJS.SHA256(req.body.password).toString(CryptoJS.enc.Hex);
+    console.log(hash)
+
+    con.query(sql, async function (err, result) {
+      if (err) throw err;
+
+      if (result.length !== 0) {
+        let sql1 = `SELECT * FROM UserLogin where password = '${hash}'`;
+    
+        con.query(sql1, async function (err, result1) {
+          if (err) throw err;
+    
+          if (result1.length !== 0) {
+     
+            return res.status(200).send({
+              success: true,
+              msg: "Login sucess",
+             
+    
+            })
+          }
+          else{
+            return res.status(200).send({
+              success: false,
+              msg: "password not matched",
+    
+            })
+          }
+        
+    
+        });
+    
+    
+      }
+      else{
+        return res.status(200).send({
+          success: false,
+          msg: "Email not registered",
+         
+
+        })
+      }
+    
+
+    });
+
+
 
   });
 
   app.post('/importwallet', async (req, res) => {
 
-    let mnemonic = req.body.key;
-    let password = req.body.password;
-    let confirm_password = req.body.confirm_password;
-    let hash = CryptoJS.SHA256(password).toString(CryptoJS.enc.Hex);
+    let mnemonic = req.body;
+    // let password = req.body.password;
+    // const finalMnemonic = mnemonic.split(",");
+    console.log(mnemonic)
 
+    // let confirm_password = req.body.confirm_password;
+    // let hash = CryptoJS.SHA256(password).toString(CryptoJS.enc.Hex);
+    let getPrivateKey = {
+      mnemonic: mnemonic,
+      success: true
+    }
     let sql = `SELECT * FROM wallet where PrivateKey = '${mnemonic}'`;
     con.query(sql, async function (err, result) {
-     
+
       if (err) throw err;
 
       if (result.length !== 0) {
-        if (password==confirm_password) {
-       
-          const sql2 = `UPDATE wallet SET password ='${hash}' WHERE PrivateKey='${mnemonic}' `;
-          con.query(sql2,  async function (err, result1) {
-            if (err) throw err;
+        
+        
             let login = await dataChk.log_in(agent, { "fingerprint":parseInt(result[0].FingerPrint)});
             console.log(parseInt(result[0].FingerPrint), login)
             return res.status(200).send({
               success: true,
-              msg: "wallet Added",
-              data: result[0].FingerPrint
+              msg: "wallet Imported",
+              data: result[0]
             })
-    
-          });
-    
-    
-    
-        }
-        else{
-              return res.status(200).send({
-          success: false,
-          msg: "password and confirm password not matched",
 
-        })
-        }
-        
-
-        
+   
       }
       else {
+        let addKeyToWallet = await dataChk.add_key(agent, getPrivateKey);
+        let getFingerPrint = await dataChk.get_private_key(agent, { "fingerprint": addKeyToWallet.fingerprint });
+        let getAddress = await dataChk.get_next_address(agent, { "fingerprint": addKeyToWallet.fingerprint, "wallet_id": 1, "new_address": false });
 
+        let login = await dataChk.log_in(agent, { "fingerprint":getFingerPrint.private_key.fingerprint});
+        console.log(getFingerPrint.private_key.fingerprint, login)
+        const sql2 = `INSERT INTO wallet( PrivateKey, FingerPrint, wallet_Address)  VALUES('${getPrivateKey.mnemonic}','${getFingerPrint.private_key.fingerprint}', '${getAddress.address}')`;
+        con.query(sql2,  async function (err, result1) {
+          if (err) throw err;
+     
+       if(result1){
+        return res.status(200).send({
+          success: true,
+          msg: "new wallet Imported",
+          data: result1[0]
+        })
+       }else{
         return res.status(200).send({
           success: false,
-          msg: "key not found",
+          msg: "new wallet not imported",
 
         })
+       }
+
+        });
+
+
+     
 
 
       }
@@ -118,7 +186,7 @@ async function main() {
     });
 
 
-   
+
 
   });
 
@@ -136,7 +204,7 @@ async function main() {
 
   });
 
-  
+
 
   app.post("/sendtransactions", async (req, res) => {
     let Amount = req.body.amount;
@@ -174,43 +242,43 @@ async function main() {
     let confirm_password = req.body.confirm_password;
     let hash = CryptoJS.SHA256(password).toString(CryptoJS.enc.Hex);
     if (password == confirm_password) {
-      let sql3 = `SELECT * FROM wallet where email = '${email}'`;
-    
+      let sql3 = `SELECT * FROM UserLogin where email = '${email}'`;
+
       con.query(sql3, async function (err, result3) {
         if (err) throw err;
-  
+
         if (result3.length !== 0) {
-  
+
           return res.status(200).send({
             success: true,
-            msg: "Email already Used",
+            msg: "Email already Used try to login",
             data: result3
-  
+
           })
         }
         else{
-          let getPrivateKey = await dataChk.generate_mnemonic(agent);
-          secretKey = getPrivateKey.mnemonic.toString();
-          console.log(secretKey)
-          let sql = `INSERT INTO wallet(password, PrivateKey, email)  VALUES('${hash}','${secretKey}', '${email}')`;
+          // let getPrivateKey = await dataChk.generate_mnemonic(agent);
+          // secretKey = getPrivateKey.mnemonic.toString();
+          // console.log(secretKey)
+          let sql = `INSERT INTO UserLogin(password, email)  VALUES('${hash}', '${email}')`;
           con.query(sql, async function (err, result) {
-    
+
             if (err) throw err;
             return res.status(200).send({
               success: true,
               msg: "sucessfully registered",
-              data: getPrivateKey
-    
+
+
             })
-    
-    
-    
+
+
+
           });
         }
-       
-  
+
+
       });
-     
+
 
     }
     else {
@@ -227,7 +295,7 @@ async function main() {
 
 
   )
-  app.post('/creatnewwallet', async (req, res) => {
+  app.post('/creatnewwallets', async (req, res) => {
     let sql = `SELECT PrivateKey FROM wallet`;
     let mnemonic = req.body.key;
     const finalMnemonic = mnemonic.split(",");
@@ -244,7 +312,7 @@ async function main() {
           let addKeyToWallet = await dataChk.add_key(agent, getPrivateKey);
           let getFingerPrint = await dataChk.get_private_key(agent, { "fingerprint": addKeyToWallet.fingerprint });
           let getAddress = await dataChk.get_next_address(agent, { "fingerprint": addKeyToWallet.fingerprint, "wallet_id": 1, "new_address": false });
-          
+
           let login = await dataChk.log_in(agent, { "fingerprint": getFingerPrint.private_key.fingerprint });
           console.log(login)
           const sql2 = `UPDATE wallet SET FingerPrint ='${getFingerPrint.private_key.fingerprint}',wallet_Address ='${getAddress.address}' WHERE PrivateKey='${mnemonic}' `;
@@ -265,15 +333,61 @@ async function main() {
           // return res.status(400).send({
           //       success: false,
           //       msg: "key not matched",
-    
+
           //     })
         }
-       
+
       })
-     
-   
+
+
 
     });
+
+
+
+  }
+
+
+
+
+
+
+
+
+
+
+  )
+
+  app.post('/creatnewwallet', async (req, res) => {
+   
+          let getPrivateKey = await dataChk.generate_mnemonic(agent);
+  
+          let addKeyToWallet = await dataChk.add_key(agent, getPrivateKey);
+          let getFingerPrint = await dataChk.get_private_key(agent, { "fingerprint": addKeyToWallet.fingerprint });
+          let getAddress = await dataChk.get_next_address(agent, { "fingerprint": addKeyToWallet.fingerprint, "wallet_id": 1, "new_address": false });
+
+          let login = await dataChk.log_in(agent, { "fingerprint": getFingerPrint.private_key.fingerprint });
+          console.log(login)
+          const sql2 = `INSERT INTO wallet(PrivateKey, FingerPrint, wallet_Address)  VALUES('${getPrivateKey.mnemonic}','${getFingerPrint.private_key.fingerprint}', '${getAddress.address}') `;
+          con.query(sql2, function (err, result1) {
+
+
+            return res.status(200).send({
+              success: true,
+              msg: "wallet generated",
+              data: { key:getPrivateKey.mnemonic, fingerprint:getFingerPrint.private_key.fingerprint, wallet_address:getAddress.address }
+
+            })
+
+          });
+        
+      
+
+  
+
+
+
+  
 
 
 
