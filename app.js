@@ -38,7 +38,9 @@ async function main() {
 
   setLogLevel("debug"); // none/error/warning/info/debug is available.
 
-const agent = new RPCAgent({ service: "wallet", configPath: "/home/ubantu/.littlelambocoin/mainnet/config/config.yaml" });
+// const agent = new RPCAgent({ service: "wallet", configPath: "/home/ubantu/.littlelambocoin/mainnet/config/config.yaml" });
+const agent = new RPCAgent({ service: "wallet", configPath: "C:/Users/hp/.littlelambocoin/mainnet/config/config.yaml" });
+
 //  let catList = await dataChk.get_cat_list(agent);
 //     console.log(catList)
     // let catListName = await dataChk.cat_asset_id_to_name(agent,{asset_id:"6d95dae356e32a71db5ddcb42224754a02524c615c5fc35f568c2af04774e589"});
@@ -505,8 +507,6 @@ console.log(result,'545555')
       success: true
     }
 
-
-    console.log(getPrivateKey,  "777777777")
     let sql = `SELECT * FROM wallet where PrivateKey = '${array1}'`;
     con.query(sql, async function (err, result) {
       if (err) throw err;
@@ -514,18 +514,16 @@ console.log(result,'545555')
 
       if (result.length !== 0) {
        
-   console.log("data present")
+   console.log(result.length !== 0, "data present")
      const sql2 = `INSERT INTO wallet(UserId, PrivateKey, FingerPrint, wallet_Address, Name)  VALUES( '${UserId}' ,'${result[0].PrivateKey}','${result[0].FingerPrint}', '${result[0].wallet_Address}', '${name}') `;
 
         // const sql2 = `UPDATE wallet SET FingerPrint ='${result[0].FingerPrint}',wallet_Address ='${result[0].wallet_Address}', PrivateKey='${result[0].PrivateKey}' WHERE UserId='${UserId}' `;
         con.query(sql2,  async function (err, result1) {
           if (err) throw err;
-       console.log(result1, "ressss1111111")
        if(result1.affectedRows!==0){
 
-        console.log("wallet imported added to user id")
+        console.log(result1.affectedRows!==0,"wallet imported added to user id")
         let login = await dataChk.log_in(agent, { "fingerprint":parseInt(result[0].FingerPrint)});
-            console.log(parseInt(result[0].FingerPrint), login)
             return res.status(200).send({
               success: true,
               msg: "wallet Imported",
@@ -549,6 +547,7 @@ console.log(result,'545555')
       else {
 
         console.log("<<<<<<<<<<<<")
+        console.log(getPrivateKey, "keyyyyyyyyyyyyyyyyyyyyyyyy")
 
         let addKeyToWallet = await dataChk.add_key(agent, getPrivateKey);
         console.log(addKeyToWallet, "add key")
@@ -559,15 +558,15 @@ console.log(result,'545555')
         let getAddress = await dataChk.get_next_address(agent, { "fingerprint": addKeyToWallet.fingerprint, "wallet_id": 1, "new_address": false });
 
         let login = await dataChk.log_in(agent, { "fingerprint":getFingerPrint.private_key.fingerprint});
-         console.log(getFingerPrint.private_key.fingerprint,"kmfkkg",login)
-        const sql2 = `INSERT INTO wallet( PrivateKey, FingerPrint, wallet_Address, Name)  VALUES('${getPrivateKey.mnemonic}','${getFingerPrint.private_key.fingerprint}', '${getAddress.address}', '${name}')`;
+        const sql2 = `INSERT INTO wallet(UserId, PrivateKey, FingerPrint, wallet_Address, Name)  VALUES('${UserId}','${getPrivateKey.mnemonic}',  '${getFingerPrint.private_key.fingerprint}', '${getAddress.address}', '${name}')`;
         //const sql2=`UPDATE wallet SET FingerPrint ='${getFingerPrint.private_key.fingerprint}',wallet_Address ='${getAddress.address}', PrivateKey='${getPrivateKey.mnemonic}' WHERE UserId='${UserId}' `
         con.query(sql2,  async function (err, result1) {
 
-          console.log(result1.affectedRows!==0, "final")
           if (err) throw err;
      
        if(result1.affectedRows!==0){
+        console.log(result1.affectedRows!==0, "final")
+
         return res.status(200).send({
           success: true,
           msg: "new wallet Imported",
@@ -669,32 +668,32 @@ console.log(result,'545555')
 
   )
 
-//   app.post('/addanotherAccount', async (req, res) => {
-//     let UserId= req.body.userId;
-//     let name=req.body.name
+  app.post('/addanotherAccount', async (req, res) => {
+    let UserId= req.body.userId;
+    let name=req.body.name
 
-//           let getPrivateKey = await dataChk.generate_mnemonic(agent);
+          let getPrivateKey = await dataChk.generate_mnemonic(agent);
 
-//           let addKeyToWallet = await dataChk.add_key(agent, getPrivateKey);
-//           let getFingerPrint = await dataChk.get_private_key(agent, { "fingerprint": addKeyToWallet.fingerprint });
-//           let getAddress = await dataChk.get_next_address(agent, { "fingerprint": addKeyToWallet.fingerprint, "wallet_id": 1, "new_address": false });
+          let addKeyToWallet = await dataChk.add_key(agent, getPrivateKey);
+          let getFingerPrint = await dataChk.get_private_key(agent, { "fingerprint": addKeyToWallet.fingerprint });
+          let getAddress = await dataChk.get_next_address(agent, { "fingerprint": addKeyToWallet.fingerprint, "wallet_id": 1, "new_address": false });
 
-//           let login = await dataChk.log_in(agent, { "fingerprint": getFingerPrint.private_key.fingerprint });
-//           console.log(login)
-//           const sql2 = `INSERT INTO wallet(UserId, PrivateKey, FingerPrint, wallet_Address, Name)  VALUES( '${UserId}' ,'${getPrivateKey.mnemonic}','${getFingerPrint.private_key.fingerprint}', '${getAddress.address}', '${name}') `;
-//           // const sql2 = `UPDATE wallet SET FingerPrint ='${getFingerPrint.private_key.fingerprint}',wallet_Address ='${getAddress.address}', PrivateKey='${getPrivateKey.mnemonic}' WHERE UserId='${UserId}' `;
+          let login = await dataChk.log_in(agent, { "fingerprint": getFingerPrint.private_key.fingerprint });
+          console.log(login)
+          const sql2 = `INSERT INTO wallet(UserId, PrivateKey, FingerPrint, wallet_Address, Name)  VALUES( '${UserId}' ,'${getPrivateKey.mnemonic}','${getFingerPrint.private_key.fingerprint}', '${getAddress.address}', '${name}') `;
+          // const sql2 = `UPDATE wallet SET FingerPrint ='${getFingerPrint.private_key.fingerprint}',wallet_Address ='${getAddress.address}', PrivateKey='${getPrivateKey.mnemonic}' WHERE UserId='${UserId}' `;
 
-//           con.query(sql2, function (err, result1) {
+          con.query(sql2, function (err, result1) {
 
-// console.log(result1,"inserted ")
-//             return res.status(200).send({
-//               success: true,
-//               msg: "another wallet generated",
-//               data: { key:getPrivateKey.mnemonic, fingerprint:getFingerPrint.private_key.fingerprint, wallet_address:getAddress.address },result1
+console.log(result1,"inserted ")
+            return res.status(200).send({
+              success: true,
+              msg: "another wallet generated",
+              data: { key:getPrivateKey.mnemonic, fingerprint:getFingerPrint.private_key.fingerprint, wallet_address:getAddress.address },result1
 
-//             })
+            })
 
-//           });
+          });
         
       
 
@@ -706,7 +705,7 @@ console.log(result,'545555')
 
 
 
-//   }
+  }
 
 
 
@@ -717,7 +716,7 @@ console.log(result,'545555')
 
 
 
-//   )
+  )
 
 };
 
