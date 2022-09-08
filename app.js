@@ -38,8 +38,10 @@ async function main() {
 
   setLogLevel("debug"); // none/error/warning/info/debug is available.
 
-// const agent = new RPCAgent({ service: "wallet", configPath: "/home/ubantu/.littlelambocoin/mainnet/config/config.yaml" });
-const agent = new RPCAgent({ service: "wallet", configPath: "C:/Users/hp/.littlelambocoin/mainnet/config/config.yaml" });
+ const agent = new RPCAgent({ service: "wallet", configPath: "/home/ubantu/.littlelambocoin/mainnet/config/config.yaml" });
+// const agent = new RPCAgent({ service: "wallet", configPath: "C:/Users/hp/.littlelambocoin/mainnet/config/config.yaml" });
+
+
 
 //  let catList = await dataChk.get_cat_list(agent);
 //     console.log(catList)
@@ -104,6 +106,7 @@ app.get('/getwalletbalance', async (req, res) => {
         con.query(sql1, async function (err, result1) {
           if (err) throw err;
           if (result1.length !== 0) {
+            console.log(result1.length !== 0)
             let sql5 = `SELECT * FROM wallet where UserId = '${result1[0].id}'`;
 
             con.query(sql5, async function (err, result5) {
@@ -113,8 +116,10 @@ app.get('/getwalletbalance', async (req, res) => {
               if (err) throw err;
 
               if (result5[0].FingerPrint !== "") {
-                // let login = await dataChk.log_in(agent, { "fingerprint":(parseInt(result5[0].FingerPrint))});
-                // console.log(parseInt(result[0].FingerPrint), login)
+
+
+                let login = await dataChk.log_in(agent, { "fingerprint":(parseInt(result5[0].FingerPrint))});
+                console.log(parseInt(result[0].FingerPrint), login)
           console.log(result5.length, 'legth')
                 return res.status(200).send({
                   success: true,
@@ -181,10 +186,11 @@ app.get('/getwalletbalance', async (req, res) => {
   app.post('/importwallet', async (req, res) => {
   let UserId= req.body.userId;
     let mnemonic = req.body.mnemonic;
+    
     let array1 = mnemonic.toString().split(',');
-    console.log(array1);
+    console.log(array1, "array converted");
 
-    console.log(mnemonic)
+    console.log(mnemonic, "user enetered")
     let getPrivateKey = {
       mnemonic: array1,
       success: true
@@ -198,7 +204,7 @@ console.log(result,'545555')
       if (result.length !== 0) {
        
 
-        const sql2 = `UPDATE wallet SET FingerPrint ='${result[0].FingerPrint}',wallet_Address ='${result[0].wallet_Address}', PrivateKey='${result[0].PrivateKey}' WHERE UserId='${UserId}' `;
+        const sql2 = `UPDATE wallet SET FingerPrint ='${result[0].FingerPrint}',wallet_Address ='${result[0].wallet_Address}', PrivateKey='${result[0].PrivateKey}' , Name='${'Account 1'}',  WHERE UserId='${UserId}' `;
         con.query(sql2,  async function (err, result1) {
           if (err) throw err;
        console.log(result1, "ressss1111111")
@@ -231,13 +237,15 @@ console.log(result,'545555')
 
         
         let addKeyToWallet = await dataChk.add_key(agent, getPrivateKey);
+
+        console.log(getPrivateKey, addKeyToWallet, "addddddddddd")
         let getFingerPrint = await dataChk.get_private_key(agent, { "fingerprint": addKeyToWallet.fingerprint });
         let getAddress = await dataChk.get_next_address(agent, { "fingerprint": addKeyToWallet.fingerprint, "wallet_id": 1, "new_address": false });
 
         let login = await dataChk.log_in(agent, { "fingerprint":getFingerPrint.private_key.fingerprint});
          console.log(getFingerPrint.private_key.fingerprint,"kmfkkg",login)
         // const sql2 = `INSERT INTO wallet( PrivateKey, FingerPrint, wallet_Address)  VALUES('${getPrivateKey.mnemonic}','${getFingerPrint.private_key.fingerprint}', '${getAddress.address}')`;
-        const sql2=`UPDATE wallet SET FingerPrint ='${getFingerPrint.private_key.fingerprint}',wallet_Address ='${getAddress.address}', PrivateKey='${getPrivateKey.mnemonic}' WHERE UserId='${UserId}' `
+        const sql2=`UPDATE wallet SET FingerPrint ='${getFingerPrint.private_key.fingerprint}',wallet_Address ='${getAddress.address}', PrivateKey='${getPrivateKey.mnemonic}',Name='${'Account 1'}', WHERE UserId='${UserId}' `
         con.query(sql2,  async function (err, result1) {
           if (err) throw err;
      
@@ -285,7 +293,7 @@ console.log(result,'545555')
 
   });
 
-  app.get('/getAllAccounts', async (req, res) => {
+  app.post('/getAllAccounts', async (req, res) => {
     let userId= req.body.userId;
     console.log(userId, "=======")
     let sql = `SELECT * FROM wallet where UserId = '${userId}'`;
@@ -356,6 +364,21 @@ console.log(result,'545555')
       success: true,
       msg: "get transactions",
       data: Wallet
+
+    })
+
+
+  });
+
+  app.post('/switchaccount', async (req, res) => {
+    let fingerprint=req.body.fingerprint;
+    let login = await dataChk.log_in(agent, { "fingerprint": parseInt(fingerprint)});
+          console.log(login)
+
+    return res.status(200).send({
+      success: true,
+      msg: "accoun switched",
+      data: login
 
     })
 
@@ -439,15 +462,18 @@ console.log(result,'545555')
       success: true
     }
 
+    console.log(getPrivateKey, "llllllll")
+
 
       let addKeyToWallet = await dataChk.add_key(agent, getPrivateKey);
+      console.log(addKeyToWallet, "addd")
           let getFingerPrint = await dataChk.get_private_key(agent, { "fingerprint": addKeyToWallet.fingerprint });
           let getAddress = await dataChk.get_next_address(agent, { "fingerprint": addKeyToWallet.fingerprint, "wallet_id": 1, "new_address": false });
           let login = await dataChk.log_in(agent, { "fingerprint": getFingerPrint.private_key.fingerprint });
           console.log(login)
           console.log(getFingerPrint, "address")
 
-          const sql2 = `UPDATE wallet SET PrivateKey='${getPrivateKey.mnemonic}', FingerPrint ='${getFingerPrint.private_key.fingerprint}',wallet_Address ='${getAddress.address}' WHERE UserId='${UserId}' `;
+          const sql2 = `UPDATE wallet SET PrivateKey='${getPrivateKey.mnemonic}', FingerPrint ='${getFingerPrint.private_key.fingerprint}',wallet_Address ='${getAddress.address}',Name='${'Account 1'}', WHERE UserId='${UserId}' `;
           console.log(getPrivateKey.mnemonic,getFingerPrint.private_key.fingerprint,getAddress.address ,UserId , "database")
           con.query(sql2, function (err, result1) {
 
